@@ -26,6 +26,14 @@ class Policy(nn.Module):
         x = self.layers[-1](x)
         x = self.output_activation(x) if self.output_activation!=None else x
         return x
+  
+
+def reward_to_go(rews):
+    n = len(rews)
+    rtgs = np.zeros_like(rews)
+    for i in reversed(range(n)):
+        rtgs[i] = rews[i] + (rtgs[i+1] if i+1 < n else 0)
+    return rtgs
 
 def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2, 
           epochs=50, batch_size=5000, render=False):
@@ -87,7 +95,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
                 batch_lens.append(ep_len)
 
                 # the weight for each logprob(a|s) is R(tau)
-                batch_weights += [ep_ret] * ep_len
+                batch_weights += list(reward_to_go(ep_rews))
 
                 # reset episode-specific variables
                 obs, done, ep_rews = env.reset(), False, []
